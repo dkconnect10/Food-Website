@@ -38,11 +38,13 @@ connectDB()
 import userRouter from "./router/userRouter.js";
 import restaurantRouter from './router/restaurantRouter.js'
 import categoryRouter from './router/categoryRouter.js'
+import foodRouter from './router/foodRouter.js'
 
 // setup router
 app.use("/api/v1/user", userRouter);
 app.use("/api/v1/restaurant",restaurantRouter)
 app.use("/api/v1/category",categoryRouter)
+app.use("/api/v1/food",foodRouter)
 
 export { app };
 
