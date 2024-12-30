@@ -39,12 +39,14 @@ import userRouter from "./router/userRouter.js";
 import restaurantRouter from './router/restaurantRouter.js'
 import categoryRouter from './router/categoryRouter.js'
 import foodRouter from './router/foodRouter.js'
+import orderRouter from './router/orderRouter.js'
 
 // setup router
 app.use("/api/v1/user", userRouter);
 app.use("/api/v1/restaurant",restaurantRouter)
 app.use("/api/v1/category",categoryRouter)
 app.use("/api/v1/food",foodRouter)
+app.use("/api/v1/order",orderRouter)
 
 export { app };
 
