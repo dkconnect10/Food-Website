@@ -1,45 +1,39 @@
 import { Order } from "../models/orderModel.js";
 
-const createOrder = async (req, res) => {
+const placeOrderController = async (req, res) => {
   try {
-    const { cart} = req.body;
+    const { cart } = req.body;
     if (!cart) {
-      return res.status(501).json({
+      return res.status(500).send({
         success: false,
-        message: "enter proper cart details",
+        message: "please food cart or payemnt method",
       });
     }
     let total = 0;
-
+    //cal
     cart.map((i) => {
-      total += i.price
+      total += i.price;
     });
 
-    const totalOrder = await Order.create({
-      food: cart,
+    const newOrder = await Order.create({
+      foods: cart,
       payment: total,
       buyer: req.user,
     });
 
-    if (!totalOrder) {
-      return res.status(501).json({
-        success: false,
-        message: "somthing went wrong while createing order",
-      });
-    }
-
-    return res.status(200).json({
+    res.status(201).send({
       success: true,
-      message: "order placed successfully",
+      message: "Order Placed successfully",
+      newOrder,
     });
   } catch (error) {
     console.log(error);
-    return res.status(500).json({
+    res.status(500).send({
       success: false,
-      message: "somthing went wrong while odring food",
+      message: "Erorr In Place Order API",
       error,
     });
   }
 };
 
-export { createOrder };
+export { placeOrderController };
