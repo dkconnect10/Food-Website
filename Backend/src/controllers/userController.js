@@ -79,7 +79,8 @@ const loginUser = async (req, res) => {
     const comparePassword = await bcrypt.compare(password, user.password);
     if (!comparePassword) {
       return res.status(401).json({
-        message: "The provided email or password is incorrect. Please check your details and try again.",
+        message:
+          "The provided email or password is incorrect. Please check your details and try again.",
         success: false,
       });
     }
@@ -210,7 +211,8 @@ const resetPassword = async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       success: false,
-      message: "An error occurred while resetting the password. Please try again later.",
+      message:
+        "An error occurred while resetting the password. Please try again later.",
     });
   }
 };
@@ -279,7 +281,8 @@ const updatePassword = async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       success: false,
-      message: "An error occurred while updating the password. Please try again later.",
+      message:
+        "An error occurred while updating the password. Please try again later.",
     });
   }
 };
