@@ -1,8 +1,95 @@
 import { Food } from "../models/foodModel.js";
+import { ApiResponse } from "../utils/ApiResponse.js";  // Import ApiResponse class
+import { ApiError } from "../utils/ApiError.js";  // Import ApiError class
+import { asyncHandler } from "../utils/AsyncHandler.js";
 
-const createFood = async (req, res) => {
-  try {
-    const {
+const createFood = asyncHandler(async (req, res) => {
+  const {
+    title,
+    description,
+    price,
+    resturant,
+    foodTags,
+    category,
+    code,
+    isAvailable,
+    rating,
+  } = req.body;
+
+  // Input validation
+  if (!title || !description || !price || !resturant) {
+    throw new ApiError(400, "Title, description, price, and restaurant are required");
+  }
+
+  // Create food item
+  const food = await Food.create({
+    title,
+    description,
+    price,
+    resturant,
+    foodTags,
+    category,
+    code,
+    isAvailable,
+    rating,
+  });
+
+  if (!food) {
+    throw new ApiError(500, "Error creating food item");
+  }
+
+  return res.status(201).json(new ApiResponse(201, food, "Food created successfully"));
+});
+
+const getAllFood = asyncHandler(async (req, res) => {
+  const foods = await Food.find({});
+  
+  if (!foods || foods.length === 0) {
+    throw new ApiError(404, "No food available in the database");
+  }
+
+  return res.status(200).json(new ApiResponse(200, foods, "Foods retrieved successfully"));
+});
+
+const getFoodById = asyncHandler(async (req, res) => {
+  const foodId = req.params.id;
+
+  // Input validation
+  if (!foodId) {
+    throw new ApiError(400, "Food ID is required");
+  }
+
+  const food = await Food.findById(foodId);
+
+  if (!food) {
+    throw new ApiError(404, "Food not found");
+  }
+
+  return res.status(200).json(new ApiResponse(200, food, "Food found successfully"));
+});
+
+const updateFood = asyncHandler(async (req, res) => {
+  const foodId = req.params.id;
+  const {
+    title,
+    description,
+    price,
+    resturant,
+    foodTags,
+    category,
+    code,
+    isAvailable,
+    rating,
+  } = req.body;
+
+  // Input validation
+  if (!foodId) {
+    throw new ApiError(400, "Food ID is required");
+  }
+
+  const food = await Food.findByIdAndUpdate(
+    foodId,
+    {
       title,
       description,
       price,
@@ -12,221 +99,56 @@ const createFood = async (req, res) => {
       code,
       isAvailable,
       rating,
-    } = req.body;
+    },
+    { new: true }
+  );
 
-    if (!title || !description || !price || !resturant) {
-      return res.status(404).json({
-        success: false,
-        message: "title , description , price and resturant is requie",
-      });
-    }
-
-    const food = await Food.create({
-      title,
-      description,
-      price,
-      resturant,
-      foodTags,
-      category,
-      code,
-      isAvailable,
-      rating,
-    });
-    if (!food) {
-      return res.status(501).json({
-        success: false,
-        message: "something went wrong while create food schema",
-      });
-    }
-    return res.status(200).json({
-      success: true,
-      message: "food create successfully",
-    });
-  } catch (error) {
-    console.log(error);
-    return res.status(501).json({
-      success: false,
-      message: "somthing went wrong while create food schema",
-    });
+  if (!food) {
+    throw new ApiError(404, "Food not found or update failed");
   }
-};
 
-const getAllFood = async (req, res) => {
-  try {
-    const food = await Food.find({});
-    if (!food) {
-      return res.status(501).json({
-        success: false,
-        message: "No food available in over database",
-      });
-    }
-    return res.status(200).json({
-      success: false,
-      message: "Food find successfully",
-      food,
-    });
-  } catch (error) {
-    console.log(error);
-    return res.status(501).json({
-      success: false,
-      message: "somthing went wrong while find All food ",
-    });
+  return res.status(200).json(new ApiResponse(200, food, "Food updated successfully"));
+});
+
+const foodByRestaurant = asyncHandler(async (req, res) => {
+  const restaurantId = req.params.id;
+
+  // Input validation
+  if (!restaurantId) {
+    throw new ApiError(400, "Restaurant ID is required");
   }
-};
 
-const getFoodbyId = async (req, res) => {
-  try {
-    const foodId = req.params.id;
+  const food = await Food.find({ restaurant: restaurantId });
 
-    if (!foodId) {
-      return res.status(409).json({
-        success: false,
-        message: "food Id not found",
-      });
-    }
-
-    const food = await Food.findOne({ foodId });
-
-    if (!food) {
-      return res.status(501).json({
-        success: false,
-        message: "food not found",
-      });
-    }
-
-    return res.status(200).json({
-      success: false,
-      message: "food found successfully",
-      food,
-    });
-  } catch (error) {
-    console.log(error);
-    return res.status(501).json({
-      success: false,
-      message: "somthing went wrong while find user by id ",
-    });
+  if (!food || food.length === 0) {
+    throw new ApiError(404, "Food not found for the given restaurant");
   }
-};
 
-const updateFood = async (req, res) => {
-  try {
-    const foodId = req.params.id;
-    const {
-      title,
-      description,
-      price,
-      resturant,
-      foodTags,
-      category,
-      code,
-      isAvailable,
-      rating,
-    } = req.body;
-    if (!foodId) {
-      return res.status(404).json({
-        success: false,
-        message: "Enter valid food id ",
-      });
-    }
-    const food = await Food.findByIdAndUpdate(
-      foodId,
-      {
-        title,
-        description,
-        price,
-        resturant,
-        foodTags,
-        category,
-        code,
-        isAvailable,
-        rating,
-      },
-      { new: true }
-    );
+  return res.status(200).json(new ApiResponse(200, food, "Food retrieved by restaurant successfully"));
+});
 
-    if (!food) {
-      return res.status(501).json({
-        success: false,
-        message: "user not updated",
-      });
-    }
-    return res.status(200).json({
-      success: true,
-      message: "user updated successfully",
-      food,
-    });
-  } catch (error) {
-    console.log(error);
-    return res.status(501).json({
-      success: false,
-      message: "something went wrong while update Food",
-    });
+const deleteFood = asyncHandler(async (req, res) => {
+  const foodId = req.params.id;
+
+  // Input validation
+  if (!foodId) {
+    throw new ApiError(400, "Food ID is required");
   }
-};
 
-const foodByRestaurant = async (req, res) => {
-  try {
-    const restaurantId = req.params.id;
-    if (!restaurantId) {
-      return res.status(501).json({
-        success: false,
-        message: "enter valid restaurant id",
-      });
-    }
+  const deletedFood = await Food.findByIdAndDelete(foodId);
 
-    const food = await Food.find({ restaurant: restaurantId });
-
-    if (!food) {
-      return res.status(404).json({
-        success: false,
-        message: "food not found",
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      message: "restaurent find successfully",
-      food
-    });
-  } catch (error) {
-    console.log(error);
-    return res.status(501).json({
-      success: false,
-      message: "something went wrong while food find by acording to restaurant",
-    });
+  if (!deletedFood) {
+    throw new ApiError(404, "Food not found for deletion");
   }
-};
 
-const deteleFood = async (req, res) => {
-  try {
-    const foodId = req.params.id;
-    if (!foodId) {
-      return res.status(501).json({
-        success: false,
-        message: "enter valid food id",
-      });
-    }
-    await Food.findByIdAndDelete(foodId);
-    return res.status(200).json({
-      success: false,
-      message: "food delete successfully ",
-    });
-  } catch (error) {
-    console.log(error);
-    return res.status(501).json({
-      success: false,
-      message: "something went wrong while Delete food",
-      food,
-    });
-  }
-};
+  return res.status(200).json(new ApiResponse(200, null, "Food deleted successfully"));
+});
 
 export {
   createFood,
   getAllFood,
-  getFoodbyId,
+  getFoodById,
   updateFood,
-  deteleFood,
+  deleteFood,
   foodByRestaurant,
-  
 };
