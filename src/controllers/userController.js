@@ -4,31 +4,97 @@ import jwt from "jsonwebtoken";
 import { ApiResponse } from "../utils/ApiResponse.js"; // Import ApiResponse for success responses
 import { ApiError } from "../utils/ApiError.js"; // Import ApiError for error responses
 import { asyncHandler } from "../utils/AsyncHandler.js";
+import { fileUploadOnCloudinary } from "../utils/fileuploadoncloudinary.js";
+
+// const registerUser = asyncHandler(async (req, res) => {
+//   const { email, password, address, userName, phone, userType, answer } =
+//     req.body;
+
+//   if (
+//     [email, password, phone, address, userName, userType, answer].some(
+//       (fields) => typeof fields !== "string" || fields.trim() === ""
+//     )
+//   ) {
+//     throw new ApiError(
+//       400,
+//       "All fields are required: email, password, user type, security answer, address, username, and phone. Please fill them out."
+//     );
+//   }
+
+//   const existingUser = await User.findOne({ email });
+//   if (existingUser) {
+//     throw new ApiError(
+//       409,
+//       `The email '${email}' is already registered. Please log in or use a different email.`
+//     );
+//   }
+
+//   const hashPassword = await bcrypt.hash(password, 10);
+
+//   const user = await User.create({
+//     email,
+//     password: hashPassword,
+//     address,
+//     userName,
+//     phone,
+//     userType,
+//     answer,
+//   });
+
+//   return res
+//     .status(201)
+//     .json(
+//       new ApiResponse(
+//         201,
+//         user,
+//         "User registered successfully. You can now log in."
+//       )
+//     );
+// });
 
 const registerUser = asyncHandler(async (req, res) => {
   const { email, password, address, userName, phone, userType, answer } =
     req.body;
 
   if (
-    [email, password, phone, address, userName, userType, answer].some(
-      (fields) => typeof fields !== "string" || fields.trim() === ""
+    [email, password, address, userName, phone, userType, answer].some(
+      (fields) => fields?.trim() == ""
     )
   ) {
+    throw new ApiError(404, "All fildes are required");
+  }
+
+  const existingUser = await User.findOne({
+    email
+  });
+  if (existingUser) {
+    throw new ApiError(501, "user alrady exist");
+  }
+
+  const profileLocalPath = req.file?.path
+  console.log(req.file)
+
+  if (!profileLocalPath) {
     throw new ApiError(
-      400,
-      "All fields are required: email, password, user type, security answer, address, username, and phone. Please fill them out."
+      501,
+      "profile not uploaded succesfully on over local path"
     );
   }
 
-  const existingUser = await User.findOne({ email });
-  if (existingUser) {
+  const profile = await fileUploadOnCloudinary(profileLocalPath);
+
+  if (!profile) {
     throw new ApiError(
-      409,
-      `The email '${email}' is already registered. Please log in or use a different email.`
+      501,
+      "somthing went wrong while profile uploading on cloudinary"
     );
   }
 
   const hashPassword = await bcrypt.hash(password, 10);
+
+  if (!hashPassword) {
+    throw new ApiError(501, "password not hash successfully");
+  }
 
   const user = await User.create({
     email,
@@ -38,17 +104,14 @@ const registerUser = asyncHandler(async (req, res) => {
     phone,
     userType,
     answer,
+    profile: profile,
   });
+
+  const createdUser = await User.findOne({ user }).select("-password");
 
   return res
     .status(201)
-    .json(
-      new ApiResponse(
-        201,
-        user,
-        "User registered successfully. You can now log in."
-      )
-    );
+    .json(new ApiResponse(201, "user register successfully", createdUser));
 });
 
 const loginUser = asyncHandler(async (req, res) => {
@@ -77,23 +140,21 @@ const loginUser = asyncHandler(async (req, res) => {
     expiresIn: "7d",
   });
 
-  return res
-    .status(200)
-    .json(
-      new ApiResponse(
-        200,
-        {
-          token,
-          user: {
-            id: user._id,
-            email: user.email,
-            userName: user.userName,
-            userType: user.userType,
-          },
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        token,
+        user: {
+          id: user._id,
+          email: user.email,
+          userName: user.userName,
+          userType: user.userType,
         },
-        "User logged in successfully."
-      )
-    );
+      },
+      "User logged in successfully."
+    )
+  );
 });
 
 const getUser = asyncHandler(async (req, res) => {

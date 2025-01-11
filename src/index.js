@@ -1,6 +1,6 @@
 import express, { json } from "express";
 import dotenv from "dotenv";
-import connectDB from "../db/connectDB.js";
+import connectDB from '../src/db/connectDB.js'
 import cookieParser from "cookie-parser";
 import cors from "cors";
 
