@@ -1,5 +1,6 @@
 import User from "../models/userModel.js";
 import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 import { ApiResponse } from "../utils/ApiResponse.js"; // Import ApiResponse for success responses
 import { ApiError } from "../utils/ApiError.js"; // Import ApiError for error responses
 import { asyncHandler } from "../utils/AsyncHandler.js";
@@ -171,6 +172,74 @@ const logoutUser = asyncHandler(async (req, res) => {
   }
 });
 
+const refreshAccessToken = asyncHandler(async (req, res) => {
+  const refreshTokenFromClient =
+    req.cookies?.refreshToken || req.body.refreshToken;
+
+  if (!refreshTokenFromClient) {
+    throw new ApiError(
+      400,
+      "REFRESH_TOKEN_MISSING",
+      "Refresh token is required but not provided."
+    );
+  }
+
+  let decodedToken;
+  try {
+    decodedToken = jwt.verify(
+      refreshTokenFromClient,
+      process.env.REFRESH_TOKEN_KEY
+    );
+  } catch (error) {
+    throw new ApiError(
+      401,
+      "INVALID_REFRESH_TOKEN",
+      "The provided refresh token is invalid or expired."
+    );
+  }
+
+  const user = await User.findById(decodedToken._id);
+
+  if (!user) {
+    throw new ApiError(
+      401,
+      "USER_NOT_FOUND",
+      "The user associated with this token does not exist."
+    );
+  }
+
+  if (user.refreshToken !== refreshTokenFromClient) {
+    throw new ApiError(
+      401,
+      "TOKEN_MISMATCH",
+      "The refresh token does not match the one stored for the user."
+    );
+  }
+
+  const { accessToken, refreshToken } = await createAccessTokenandRefreshToken(
+    user._id
+  );
+
+  const cookieOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production", // Secure in production
+    sameSite: "Strict", // Prevent CSRF
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+  };
+
+  return res
+    .status(201)
+    .cookie("refreshToken", refreshToken, cookieOptions)
+    .cookie("accessToken", accessToken, cookieOptions)
+    .json(
+      new ApiResponse(
+        201,
+        { refreshToken, accessToken },
+        "Tokens refreshed successfully. You can continue using the service."
+      )
+    );
+});
+
 const getUser = asyncHandler(async (req, res) => {
   const { _id } = req.user;
 
@@ -206,6 +275,35 @@ const updateUser = asyncHandler(async (req, res) => {
   return res
     .status(200)
     .json(new ApiResponse(200, user, "User updated successfully"));
+});
+
+const updateProfile = asyncHandler(async (req, res) => {
+  const profileLocalPath = req.file?.path;
+
+  if (!profileLocalPath) {
+    throw new ApiError(404, "Profile not available in the local path.");
+  }
+  const cloudinaryProfile = await fileUploadOnCloudinary(profileLocalPath);
+
+  if (!cloudinaryProfile.url) {
+    throw new ApiError(501, "Failed to upload profile to Cloudinary.");
+  }
+
+  const updatedUser = await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: { profile: cloudinaryProfile.url },
+    },
+    { new: true }
+  );
+
+  if (!updatedUser) {
+    throw new ApiError(404, "User not found for updating profile.");
+  }
+
+  return res
+    .status(201)
+    .json(new ApiResponse(201, "Profile uploaded to Cloudinary successfully."));
 });
 
 const resetPassword = asyncHandler(async (req, res) => {
@@ -245,6 +343,25 @@ const deleteUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, null, "User deleted successfully."));
 });
 
+const deleteProfile = asyncHandler(async (req, res) => {
+  const updatedUser = await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $unset: { profile: "" },
+    },
+    { new: true }
+  );
+
+  if (!updatedUser) {
+    throw new ApiError(404, "User not found for profile deletion.");
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, "Profile deleted successfully."));
+});
+
+
 const updatePassword = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user);
 
@@ -279,9 +396,12 @@ export {
   registerUser,
   loginUser,
   logoutUser,
+  refreshAccessToken,
   getUser,
   updateUser,
+  updateProfile,
   resetPassword,
   deleteUser,
+  deleteProfile,
   updatePassword,
 };
