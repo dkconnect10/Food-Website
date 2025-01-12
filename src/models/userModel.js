@@ -1,4 +1,6 @@
+import jwt from 'jsonwebtoken'
 import mongoose from "mongoose";
+import { ApiError } from "../utils/ApiError.js";
 
 const userSchema = new mongoose.Schema(
   {
@@ -44,15 +46,34 @@ const userSchema = new mongoose.Schema(
       default:
         "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRnyou2ZtjP6jn_NGApj8LpsBjR5veuD5T4sA&s",
     },
-    answer:{
-      type:String,
-      required:[true,"Enter your favrite sport Name"]
-    }
+    refreshToken: {
+      type: String,
+    },
+    answer: {
+      type: String,
+      required: [true, "Enter your favrite sport Name"],
+    },
   },
   { timestamps: true }
 );
 
+userSchema.methods.generateRefreshToken = function () {
+  return jwt.sign({ _id: this._id }, process.env.REFRESH_TOKEN_KEY, {
+    expiresIn: "1d",
+  });
+};
+
+userSchema.methods.generateAccessToken = function () {
+  return jwt.sign(
+    {
+      _id: this._id,
+      userName: this.userName,
+      email: this.email,
+    },
+    process.env.ACCESS_TOKEN_KEY,
+    { expiresIn: "10d" }
+  );
+};
 
 const User = mongoose.model("User", userSchema);
-
 export default User;

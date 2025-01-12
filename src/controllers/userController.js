@@ -5,53 +5,23 @@ import { ApiResponse } from "../utils/ApiResponse.js"; // Import ApiResponse for
 import { ApiError } from "../utils/ApiError.js"; // Import ApiError for error responses
 import { asyncHandler } from "../utils/AsyncHandler.js";
 import { fileUploadOnCloudinary } from "../utils/fileuploadoncloudinary.js";
+import cookieParser from "cookie-parser";
 
-// const registerUser = asyncHandler(async (req, res) => {
-//   const { email, password, address, userName, phone, userType, answer } =
-//     req.body;
+const createAccessTokenandRefreshToken = async (userId) => {
+  try {
+    const user = await User.findById(userId);
+    const refreshToken = user.generateRefreshToken();
+    const accessToken = user.generateAccessToken();
 
-//   if (
-//     [email, password, phone, address, userName, userType, answer].some(
-//       (fields) => typeof fields !== "string" || fields.trim() === ""
-//     )
-//   ) {
-//     throw new ApiError(
-//       400,
-//       "All fields are required: email, password, user type, security answer, address, username, and phone. Please fill them out."
-//     );
-//   }
+    user.refreshToken = refreshToken;
 
-//   const existingUser = await User.findOne({ email });
-//   if (existingUser) {
-//     throw new ApiError(
-//       409,
-//       `The email '${email}' is already registered. Please log in or use a different email.`
-//     );
-//   }
+    await user.save({ validateBeforeSave: false });
 
-//   const hashPassword = await bcrypt.hash(password, 10);
-
-//   const user = await User.create({
-//     email,
-//     password: hashPassword,
-//     address,
-//     userName,
-//     phone,
-//     userType,
-//     answer,
-//   });
-
-//   return res
-//     .status(201)
-//     .json(
-//       new ApiResponse(
-//         201,
-//         user,
-//         "User registered successfully. You can now log in."
-//       )
-//     );
-// });
-
+    return refreshToken, accessToken;
+  } catch (error) {
+    throw new ApiError(501, "somthing went wrong while createing tokens");
+  }
+};
 const registerUser = asyncHandler(async (req, res) => {
   const { email, password, address, userName, phone, userType, answer } =
     req.body;
@@ -65,14 +35,15 @@ const registerUser = asyncHandler(async (req, res) => {
   }
 
   const existingUser = await User.findOne({
-    email
+    email,
   });
+
   if (existingUser) {
     throw new ApiError(501, "user alrady exist");
   }
 
-  const profileLocalPath = req.file?.path
-  console.log(req.file)
+  const profileLocalPath = req.file?.path;
+  console.log(req.file);
 
   if (!profileLocalPath) {
     throw new ApiError(
@@ -90,11 +61,7 @@ const registerUser = asyncHandler(async (req, res) => {
     );
   }
 
-  const hashPassword = await bcrypt.hash(password, 10);
-
-  if (!hashPassword) {
-    throw new ApiError(501, "password not hash successfully");
-  }
+  let hashPassword = await bcrypt.hash(password, 10);
 
   const user = await User.create({
     email,
@@ -104,57 +71,59 @@ const registerUser = asyncHandler(async (req, res) => {
     phone,
     userType,
     answer,
-    profile: profile,
+    profile: profile.url || "",
   });
-
-  const createdUser = await User.findOne({ user }).select("-password");
 
   return res
     .status(201)
-    .json(new ApiResponse(201, "user register successfully", createdUser));
+    .json(new ApiResponse(201, user, "user register successfully"));
 });
 
 const loginUser = asyncHandler(async (req, res) => {
   const { email, password, userType } = req.body;
 
-  if (!email || !password || !userType) {
-    throw new ApiError(400, "Email, password, and userType are required.");
+  if ([email, password, userType].some((fildes) => fildes?.trim() == "")) {
+    throw new ApiError(404, "Email , Password, UserType Is required");
   }
 
-  const user = await User.findOne({ email, userType });
+  const user = await User.findOne({ email });
+
   if (!user) {
-    throw new ApiError(404, "User does not exist. Please register.");
+    throw new ApiError(501, "Email not register");
   }
 
   const comparePassword = await bcrypt.compare(password, user.password);
+
   if (!comparePassword) {
-    throw new ApiError(
-      401,
-      "The provided email or password is incorrect. Please check your details and try again."
-    );
+    throw new ApiError(404, "incorect password");
   }
 
-  user.password = undefined;
+  if (user.userType !== userType) {
+    throw new ApiError(501, "userType is wrong");
+  }
 
-  const token = jwt.sign({ _id: user._id }, process.env.JWT_SECRET, {
-    expiresIn: "7d",
-  });
-
-  return res.status(200).json(
-    new ApiResponse(
-      200,
-      {
-        token,
-        user: {
-          id: user._id,
-          email: user.email,
-          userName: user.userName,
-          userType: user.userType,
-        },
-      },
-      "User logged in successfully."
-    )
+  const { refreshToken, accessToken } = createAccessTokenandRefreshToken(
+    user._id
   );
+
+  const options = {
+    httpOnly: true,
+    secure: true,
+  };
+
+  const loggedInUser = await User.findById(user._id);
+
+  return res
+    .status(201)
+    .cookie("refreshToken", refreshToken, options)
+    .cookie("accessToken", accessToken, options)
+    .json(
+      new ApiResponse(
+        201,
+        { user: loggedInUser, refreshToken, accessToken },
+        "User logged in successfully"
+      )
+    );
 });
 
 const getUser = asyncHandler(async (req, res) => {

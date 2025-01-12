@@ -13,7 +13,10 @@ import { upload } from "../middleware/multer.Middleware.js";
 
 const router = Router();
 
-router.route("/register").post(upload.single("profile"), registerUser);
+// router.route("/register").post(upload.single("profile"), registerUser);
+
+
+router.route("/register").post(upload.single("profile"),registerUser)
 
 router.route("/login").post(loginUser);
 router.route("/getUser").get(authUser, getUser);
