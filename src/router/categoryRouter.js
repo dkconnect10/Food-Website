@@ -1,14 +1,14 @@
 import { Router } from "express";
 import { categoryRegister,findAllCategory,findCategoryById,deleteCategoryById,updateCategory } from "../controllers/categoryController.js";
-import {authUser}  from '../middleware/authMiddleware.js'
+
 
 const router = Router()
 
-router.route("/register").post(authUser,categoryRegister)
+router.route("/register").post(categoryRegister)
 router.route("/get").get(findAllCategory)
 router.route("/get/:id").get(findCategoryById)
 router.route('/delete/:id').delete(deleteCategoryById)
-router.route("/update/:id").patch(authUser,updateCategory)
+router.route("/update/:id").patch(updateCategory)
 
 
 export default router

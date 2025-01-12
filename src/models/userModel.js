@@ -1,6 +1,6 @@
-import jwt from 'jsonwebtoken'
+import jwt from 'jsonwebtoken';
 import mongoose from "mongoose";
-import { ApiError } from "../utils/ApiError.js";
+
 
 const userSchema = new mongoose.Schema(
   {
@@ -51,7 +51,7 @@ const userSchema = new mongoose.Schema(
     },
     answer: {
       type: String,
-      required: [true, "Enter your favrite sport Name"],
+      required: [true, "Enter your favorite sport Name"],
     },
   },
   { timestamps: true }
@@ -59,7 +59,7 @@ const userSchema = new mongoose.Schema(
 
 userSchema.methods.generateRefreshToken = function () {
   return jwt.sign({ _id: this._id }, process.env.REFRESH_TOKEN_KEY, {
-    expiresIn: "1d",
+    expiresIn: "1d", // Consider adjusting expiry based on your needs
   });
 };
 
@@ -71,7 +71,7 @@ userSchema.methods.generateAccessToken = function () {
       email: this.email,
     },
     process.env.ACCESS_TOKEN_KEY,
-    { expiresIn: "10d" }
+    { expiresIn: "15m" } // Consider shortening the lifespan for better security
   );
 };
 
