@@ -1,11 +1,9 @@
 import User from "../models/userModel.js";
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
 import { ApiResponse } from "../utils/ApiResponse.js"; // Import ApiResponse for success responses
 import { ApiError } from "../utils/ApiError.js"; // Import ApiError for error responses
 import { asyncHandler } from "../utils/AsyncHandler.js";
 import { fileUploadOnCloudinary } from "../utils/fileuploadoncloudinary.js";
-import cookieParser from "cookie-parser";
 
 const createAccessTokenandRefreshToken = async (userId) => {
   try {
@@ -24,11 +22,10 @@ const createAccessTokenandRefreshToken = async (userId) => {
 
     return { refreshToken, accessToken };
   } catch (error) {
-    console.error(error); 
+    console.error(error);
     throw new ApiError(500, "Something went wrong while creating tokens.");
   }
 };
-
 
 const registerUser = asyncHandler(async (req, res) => {
   const { email, password, address, userName, phone, userType, answer } =
@@ -136,10 +133,8 @@ const loginUser = asyncHandler(async (req, res) => {
     );
 });
 
-
 const logoutUser = asyncHandler(async (req, res) => {
   try {
-   
     const user = await User.findByIdAndUpdate(
       req.user?._id,
       {
@@ -152,25 +147,29 @@ const logoutUser = asyncHandler(async (req, res) => {
       }
     );
 
-    
     const options = {
       httpOnly: true,
       secure: true,
     };
 
-    
     return res
-      .status(200)  // Use 200 for successful logout
+      .status(200) // Use 200 for successful logout
       .clearCookie("refreshToken", options)
       .clearCookie("accessToken", options)
-      .json(new ApiResponse(200, user, "User has been logged out successfully, and cookies have been cleared."));
-    
+      .json(
+        new ApiResponse(
+          200,
+          user,
+          "User has been logged out successfully, and cookies have been cleared."
+        )
+      );
   } catch (error) {
-    
-    throw new ApiError(500, "An error occurred while logging out the user. Please try again later.");
+    throw new ApiError(
+      500,
+      "An error occurred while logging out the user. Please try again later."
+    );
   }
 });
-
 
 const getUser = asyncHandler(async (req, res) => {
   const { _id } = req.user;
@@ -196,10 +195,11 @@ const updateUser = asyncHandler(async (req, res) => {
     throw new ApiError(401, "User not authenticated");
   }
 
-  const { address, phone } = req.body;
+  const { address, phone, userType } = req.body;
 
   if (address) user.address = address;
   if (phone) user.phone = phone;
+  if (userType) user.userType = userType;
 
   await user.save();
 

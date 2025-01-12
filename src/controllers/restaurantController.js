@@ -44,6 +44,11 @@ const restaurantRegister = asyncHandler(async (req, res) => {
     throw new ApiError(409, "Restaurant not created");
   }
 
+  if (user.userType !== 'admin') {
+    user.userType = "vendor"
+    user.save()
+  }
+ 
   return res
     .status(200)
     .json(

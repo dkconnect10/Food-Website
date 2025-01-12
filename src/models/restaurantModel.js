@@ -2,6 +2,11 @@ import mongoose, { Schema } from "mongoose";
 
 const restaurantSchema = new Schema(
   {
+    owner: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+
     title: {
       type: String,
       required: [true, "Restaurant title is required"],
@@ -47,6 +52,6 @@ const restaurantSchema = new Schema(
   { timestamps: true }
 );
 
-const  Restaurant = mongoose.model("Restaurant", restaurantSchema);
+const Restaurant = mongoose.model("Restaurant", restaurantSchema);
 
 export default Restaurant;
