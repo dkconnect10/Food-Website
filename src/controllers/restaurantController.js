@@ -2,6 +2,7 @@ import Restaurant from "../models/restaurantModel.js";
 import { asyncHandler } from "../utils/AsyncHandler.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
+import Category from "../models/categoryModel.js";
 
 // Register Restaurant
 const restaurantRegister = asyncHandler(async (req, res) => {
@@ -44,11 +45,11 @@ const restaurantRegister = asyncHandler(async (req, res) => {
     throw new ApiError(409, "Restaurant not created");
   }
 
-  if (user.userType !== 'admin') {
-    user.userType = "vendor"
-    user.save()
+  if (user.userType !== "admin") {
+    user.userType = "vendor";
+    user.save();
   }
- 
+
   return res
     .status(200)
     .json(
@@ -120,9 +121,35 @@ const deleteRestaurantById = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, null, "Restaurant deleted successfully"));
 });
 
+// Get All category
+const getAllCategory = asyncHandler(async (req, res) => {
+  const category = await Restaurant.aggregate([
+    {
+      $lookup: {
+        from: "categories",
+        localField: "_id",
+        foreignField: "restaurantId",
+        as: "categories",
+      },
+    },
+    {
+      $project:{
+        title: 1, 
+        "categories.title": 1, 
+        "categories._id": 1,
+      }
+    }
+  ]);
+
+  return res
+    .status(201)
+    .json(new ApiResponse(201, category, "Get All category successfully"));
+});
+
 export {
   restaurantRegister,
   getAllrestaurant,
   getRestaurantById,
   deleteRestaurantById,
+  getAllCategory,
 };

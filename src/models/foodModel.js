@@ -22,8 +22,10 @@ const foodSchema = new Schema(
     foodTags: {
       type: String,
     },
-    category: {
-      type: String,
+    categoryType: {
+      type:mongoose.Schema.Types.ObjectId,
+      ref:"Category",
+      required:true
     },
     code: {
       type: String,

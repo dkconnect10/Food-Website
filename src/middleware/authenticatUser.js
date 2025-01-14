@@ -4,8 +4,10 @@ import User from "../models/userModel.js";
 
 const authenticated = async (req, res, next) => {
   try {
-    const token = req.cookies?.accessToken || req.headers("Authorization")?.replace("Bearer ","")
-    
+    const token =
+      req.cookies?.accessToken || 
+      req.headers['authorization']?.replace("Bearer ", "");
+
     if (!token) {
       throw new ApiError(401, "Access token is missing. Please login.");
     }
@@ -19,7 +21,6 @@ const authenticated = async (req, res, next) => {
     }
 
     req.user = user;
-
     next();
   } catch (error) {
     console.error(error);

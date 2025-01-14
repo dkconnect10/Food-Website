@@ -33,6 +33,9 @@ const restaurantSchema = new Schema(
     logoUrl: {
       type: String,
     },
+    category: {
+      type: String,
+    },
     rating: {
       type: Number,
       default: 1,
