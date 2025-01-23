@@ -4,7 +4,7 @@ import { ApiError } from "../utils/ApiError.js";  // Import ApiError class
 import { asyncHandler } from "../utils/AsyncHandler.js";
 
 // Place order controller
-const placeOrderController = asyncHandler((req, res, next) => {
+const placeOrderController = asyncHandler(async(req, res, next) => {
   const { cart } = req.body;
 
   // Validate cart

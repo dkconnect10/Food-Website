@@ -1,6 +1,5 @@
-import jwt from 'jsonwebtoken';
+import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
-
 
 const userSchema = new mongoose.Schema(
   {
@@ -48,6 +47,14 @@ const userSchema = new mongoose.Schema(
     },
     refreshToken: {
       type: String,
+    },
+    otp: {
+      type: String,
+      default: null,
+    },
+    otpExpiresAt: {
+      type: Date,
+      default: null,
     },
     answer: {
       type: String,

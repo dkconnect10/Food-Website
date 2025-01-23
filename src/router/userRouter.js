@@ -11,6 +11,9 @@ import {
   deleteUser,
   deleteProfile,
   updatePassword,
+  forgotPassword,
+  verfiyOtp,
+  updateingPassword,
 } from "../controllers/userController.js";
 import { upload } from "../middleware/multer.Middleware.js";
 import { authenticated } from "../middleware/authenticatUser.js";
@@ -27,7 +30,10 @@ router
   .patch(authenticated, upload.single("profile"), updateProfile);
 router.route("/resetPassword").post(resetPassword);
 router.route("/deleteUser").delete(authenticated, deleteUser);
-router.route("/profileDelete").delete(authenticated,deleteProfile)
+router.route("/profileDelete").delete(authenticated, deleteProfile);
 router.route("/updatePassword").patch(authenticated, updatePassword);
+router.route("/forggot").post(forgotPassword);
+router.route("/validetOtp").post(verfiyOtp);
+router.route("/afterValidateUpdatePassword").patch(updateingPassword);
 
 export default router;
